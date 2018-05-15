@@ -75,7 +75,6 @@ print("Loading pair file done...")
 cand_list = cand_dict.keys()
 
 count_dict = {}
-
 for i, cand in enumerate(cand_list):
     name = ".".join(sorted(cand_dict[cand]))
 
@@ -84,27 +83,29 @@ for i, cand in enumerate(cand_list):
     else:
         count_dict[name].append(cand)
 
-train_cand_list = []
 
-for type_,cand_list in count_dict.items():
-	random.shuffle(cand_list)
+train_cand_list = []
+for type_,inst_list in count_dict.items():
+	random.shuffle(inst_list)
 	#take 10 percent from here
-	train_cand_list += cand_list[0:int(len(cand_list)*data_split/100)]
+	train_cand_list += inst_list[0:int(len(inst_list)*data_split/100)]
 
 
 print(" -number of pairs:", len(cand_dict))
 print(" -number of types:", len(count_dict))
 print(" -percent of train data:", data_split)
-print(" -number of pair to train GEN model", len(train_cand_list))
+print(" -number of pair to train GEN model:", len(train_cand_list))
 
 
 
 for i, cand in enumerate(cand_list):
-	split = 0 if cand in train_cand_list else 1
+	#split = 0 if cand in train_cand_list else 1
 
-	raw_text = RawText(stable_id=cand, name=cand, text=cand)
-	tweet = Tweet(tweet=raw_text, split=split)
-	session.add(tweet)
+    if cand in train_cand_list: 
+        split = 0
+        raw_text = RawText(stable_id=cand, name=cand, text=cand)
+        tweet = Tweet(tweet=raw_text, split=split)
+        session.add(tweet)
 
 session.commit()
 
