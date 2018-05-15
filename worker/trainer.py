@@ -7,7 +7,7 @@ import random
 import numpy as np
 from collections import defaultdict
 import pickle
-
+import time
 
 sys.path.append("../")
 
@@ -27,12 +27,12 @@ session = SnorkelSession()
 parser = optparse.OptionParser("%prog [options]")
 
 parser.add_option("-i", "--input-pair",   dest="input_pair", help="the pair file [default: %default]")
-parser.add_option("-s", "--saved-dir",  dest="saved_dir", help="directory to save the rank scores [default: %default]")
+parser.add_option("-s", "--saved-dir",  dest="saved_dir", help="directory to save everything scores [default: %default]")
 parser.add_option("-d", "--data-split",  dest="data_split", type="int", help="percent data going to training gen model [default: %default]")
 
 
 parser.set_defaults(
-        input_pair       = "/Users/datienguyen/Desktop/coding/data-search/exp-data/dataSEARCH/pair-store/3_signals.top20doc.csv" #
+        input_pair       = "/Users/datienguyen/Desktop/coding/data-search/exp-data/dataSEARCH/pair-store/test.csv" #
         ,saved_dir      = "../../data-search/exp-data/dataSearch/pair-store/"
         ,data_split        = 10
 )
@@ -40,6 +40,10 @@ parser.set_defaults(
 opts,args = parser.parse_args(sys.argv)
 input_pair =opts.input_pair
 data_split = opts.data_split
+
+
+
+start_time = time.time()
 
 session.query(Context).delete()
 session.query(Candidate).delete()
@@ -60,20 +64,17 @@ with open(input_pair, "r") as myFile:
         anno = row[5]
 
         if item_id not in cand_dict:
-        	cand_dict[item_id] = {}
-        	cand_dict[item_id][worker_id] = anno
+            cand_dict[item_id] = {}
+            cand_dict[item_id][worker_id] = anno
         else:
-        	cand_dict[item_id][worker_id] = anno
-
+            cand_dict[item_id][worker_id] = anno
+print("-----------------------------------------------------------")
+print("Input:", input_pair)
 print("Loading pair file done...")
 
 
-
-
 #doing statistic here and sample for training the generative model
-
 cand_list = cand_dict.keys()
-
 count_dict = {}
 for i, cand in enumerate(cand_list):
     name = ".".join(sorted(cand_dict[cand]))
@@ -86,9 +87,9 @@ for i, cand in enumerate(cand_list):
 
 train_cand_list = []
 for type_,inst_list in count_dict.items():
-	random.shuffle(inst_list)
-	#take 10 percent from here
-	train_cand_list += inst_list[0:int(len(inst_list)*data_split/100)]
+    random.shuffle(inst_list)
+    #take some for training generative model
+    train_cand_list += inst_list[0:int(len(inst_list)*data_split/100)]
 
 
 print(" -number of pairs:", len(cand_dict))
@@ -97,52 +98,56 @@ print(" -percent of train data:", data_split)
 print(" -number of pair to train GEN model:", len(train_cand_list))
 
 
+start_time = time.time()
 
-for i, cand in enumerate(cand_list):
-	#split = 0 if cand in train_cand_list else 1
+# for i, cand in enumerate(cand_list):
+#   split = 0 if cand in train_cand_list else 1
+#     raw_text = RawText(stable_id=cand, name=cand, text=cand)
+#     tweet = Tweet(tweet=raw_text, split=split)
+#     session.add(tweet)
 
-    if cand in train_cand_list: 
-        split = 0
-        raw_text = RawText(stable_id=cand, name=cand, text=cand)
-        tweet = Tweet(tweet=raw_text, split=split)
-        session.add(tweet)
+    
+for i, cand in enumerate(train_cand_list):
+    raw_text = RawText(stable_id=cand, name=cand, text=cand)
+    tweet = Tweet(tweet=raw_text, split=0)
+    session.add(tweet)
 
 session.commit()
 
-print("Commit to snorkel database done...")
+print("Write to snorkel.db in:", (time.time() - start_time)/60, 'minutes.')
 
 #writing label generator 
 def worker_label_generator(t):
-	for worker_id in cand_dict[t.tweet.stable_id]:
-		yield worker_id, cand_dict[t.tweet.stable_id][worker_id]
+    for worker_id in cand_dict[t.tweet.stable_id]:
+        yield worker_id, cand_dict[t.tweet.stable_id][worker_id]
 
+start_time = time.time()
 np.random.seed(1701)
 labeler = LabelAnnotator(label_generator=worker_label_generator)
 L_train = labeler.apply(split=0)
 
-print(L_train.lf_stats(session))
+print("Apply labeler for training data in:", (time.time() - start_time)/60, 'minutes.')
 
-print("Creat training data done...")
+print(L_train.lf_stats(session))
 print(" -train data shape", (L_train.shape))
 
 
 print("Start to train a generative model")
 gen_model = GenerativeModel(lf_propensity=True)
 gen_model.train(
-  	L_train,
+    L_train,
     reg_type=2,
     reg_param=0.1,
     epochs=30
 )
 
-
 #doing statistics
 print(gen_model.learned_lf_stats())
 
 print("Train a genetive model done...!")
-train_marginals = gen_model.marginals(L_train)
-print("Number of examples:", len(train_marginals))
-print(train_marginals)
+#train_marginals = gen_model.marginals(L_train)
+#print("Number of examples:", len(train_marginals))
+#print(train_marginals)
 
 
 
