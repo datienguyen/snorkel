@@ -41,8 +41,8 @@ opts,args = parser.parse_args(sys.argv)
 input_pair =opts.input_pair
 data_split = opts.data_split
 
-#session.query(Context).delete()
-#session.query(Candidate).delete()
+session.query(Context).delete()
+session.query(Candidate).delete()
 
 values = ['positive', 'negative']
 Tweet = candidate_subclass('Tweet', ['tweet'], values=values)
