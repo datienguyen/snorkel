@@ -5,20 +5,24 @@ import sys
 import csv
 import random
 import numpy as np
-from snorkel import SnorkelSession
 
-session = SnorkelSession()
+from collections import defaultdict
+import pickle
+
+
+
+sys.path.append("../")
+
+import snorkel.SnorkelSession
 
 from snorkel.models import candidate_subclass
 from snorkel.models import Context, Candidate
 from snorkel.contrib.models.text import RawText
 
 from snorkel.annotations import LabelAnnotator
-from collections import defaultdict
-import pickle
 from snorkel.learning.gen_learning import GenerativeModel
 
-
+session = SnorkelSession()
 
 
 #loading data

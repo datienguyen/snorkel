@@ -28,18 +28,21 @@ parser = optparse.OptionParser("%prog [options]")
 
 parser.add_option("-i", "--input-pair",   dest="input_pair", help="the pair file [default: %default]")
 parser.add_option("-s", "--saved-dir",  dest="saved_dir", help="directory to save the rank scores [default: %default]")
+parser.add_option("-d", "--data-split",  dest="data_split", type="int", help="percent data going to training gen model [default: %default]")
 
 
 parser.set_defaults(
         input_pair       = "/Users/datienguyen/Desktop/coding/data-search/exp-data/dataSEARCH/pair-store/train.csv" #3_signals.top20doc.csv" #
         ,saved_dir      = "../../data-search/exp-data/dataSearch/pair-store/"
+        ,data_split        = 10
 )
 
 opts,args = parser.parse_args(sys.argv)
 input_pair =opts.input_pair
+data_split = opts.data_split
 
-#session.query(Context).delete()
-#session.query(Candidate).delete()
+session.query(Context).delete()
+session.query(Candidate).delete()
 
 values = ['positive', 'negative']
 Tweet = candidate_subclass('Tweet', ['tweet'], values=values)
@@ -89,11 +92,12 @@ for i in range(1, n+1):
 	cand_list = count_dict[i]
 	random.shuffle(cand_list)
 	#take 10 percent from here
-	train_cand_list += cand_list[0:int(len(cand_list)*0.4)]
+	train_cand_list += cand_list[0:int(len(cand_list)*data_split/100)]
 
 
 print(" -number of pairs:", len(cand_dict))
 print(" -number of signals:", n)
+print(" -percent of train data:", data_split)
 print(" -number of pair to train GEN model", len(train_cand_list))
 
 
