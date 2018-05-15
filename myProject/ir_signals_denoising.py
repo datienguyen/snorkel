@@ -32,7 +32,7 @@ parser.add_option("-d", "--data-split",  dest="data_split", type="int", help="pe
 
 
 parser.set_defaults(
-        input_pair       = "/Users/datienguyen/Desktop/coding/data-search/exp-data/dataSEARCH/pair-store/train.csv" #3_signals.top20doc.csv" #
+        input_pair       = "/Users/datienguyen/Desktop/coding/data-search/exp-data/dataSEARCH/pair-store/3_signals.top20doc.csv" #
         ,saved_dir      = "../../data-search/exp-data/dataSearch/pair-store/"
         ,data_split        = 10
 )
@@ -77,26 +77,23 @@ cand_list = cand_dict.keys()
 count_dict = {}
 
 for i, cand in enumerate(cand_list):
-	n = len(cand_dict[cand])
-	if n not in count_dict:
-		count_dict[n] = [cand]
-	else:
-		count_dict[n].append(cand)
+    name = ".".join(sorted(cand_dict[cand]))
 
-n_signals = len(count_dict)
-
+    if name not in count_dict:
+        count_dict[name] = [cand]
+    else:
+        count_dict[name].append(cand)
 
 train_cand_list = []
 
-for i in range(1, n+1):
-	cand_list = count_dict[i]
+for type_,cand_list in count_dict.items():
 	random.shuffle(cand_list)
 	#take 10 percent from here
 	train_cand_list += cand_list[0:int(len(cand_list)*data_split/100)]
 
 
 print(" -number of pairs:", len(cand_dict))
-print(" -number of signals:", n)
+print(" -number of types:", len(count_dict))
 print(" -percent of train data:", data_split)
 print(" -number of pair to train GEN model", len(train_cand_list))
 
